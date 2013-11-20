@@ -11,8 +11,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-    exposed-modules: MachineLearning.Hopfield
-    other-modules: MachineLearning.Util
+    exposed-modules: MachineLearning.Hopfield, MachineLearning.Util
     default-language:    Haskell2010
     build-depends:
         base,
@@ -26,6 +25,7 @@ Test-Suite hopfield_test
     x-uses-tf: true
     main-is: MachineLearning/HopfieldTest.hs
     default-language: Haskell2010
+    GHC-Options:    -Wall
     build-depends:
         hopfield-networks,
         base,
@@ -40,6 +40,7 @@ Test-Suite hopfield_test
 executable hopfield_demonstration
     main-is: MachineLearning/HopfieldDemonstration.hs
     default-language: Haskell2010
+    GHC-Options:    -Wall
     build-depends:
         hopfield-networks,
         base,

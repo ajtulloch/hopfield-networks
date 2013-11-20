@@ -1,6 +1,6 @@
+-- | Implementation of Hopfield Network training and asssociating
 module MachineLearning.Hopfield
     (HopfieldNet(..),
-     initialize,
      initializeWith,
      activity,
      train,
@@ -13,19 +13,21 @@ import qualified Data.Matrix          as M
 import qualified Data.Vector          as V
 import           MachineLearning.Util
 
+
+-- | HopfieldNet maintains the state and weights of the Hopfield
+-- Network, and is the major datastructure used in this code.
 data HopfieldNet = HopfieldNet { _state   :: V.Vector Float
                                , _weights :: M.Matrix Float
                                } deriving (Show)
 
+-- | Maps the activation of a neuron to the output.
 activity :: Float -> Float
 activity activation = if activation <= 0 then -1.0 else 1.0
-
-activityProp :: Float -> Bool
-activityProp x = x == 0 || activity x == signum x
 
 initialize :: Int -> HopfieldNet
 initialize n = HopfieldNet (V.replicate n 0) (M.zero n n)
 
+-- | Initializes the HopfieldNet with the given training patterns.
 initializeWith :: M.Matrix Float -> HopfieldNet
 initializeWith patterns = train state patterns
   where
@@ -43,6 +45,8 @@ update current =  do
   i <-  R.getRandomR (0, (V.length . _state) current - 1)
   return $ update' current i
 
+-- | Updates the weights of the Hopfield network with the given
+-- training patterns.
 train :: HopfieldNet -> M.Matrix Float -> HopfieldNet
 train (HopfieldNet state weights) patterns =
     HopfieldNet state (weights + updates)
@@ -55,13 +59,14 @@ train (HopfieldNet state weights) patterns =
 settle :: R.MonadRandom m => HopfieldNet -> Int -> m HopfieldNet
 settle net iterations = foldM (\state _ -> update state) net [1..iterations]
 
-associate
-  :: R.MonadRandom m =>
-     HopfieldNet -> Int -> V.Vector Float -> m (V.Vector Float)
+-- | Repeatedly adjusts the Hopfield network's state to minimize the
+-- energy of the current configuration.
+associate :: R.MonadRandom m => HopfieldNet -> Int -> V.Vector Float -> m (V.Vector Float)
 associate net iterations pattern =
     do
       settled <-  settle (net { _state = pattern }) iterations
       return $ _state settled
 
+-- | The energy of the current configuration of the Hopfield network.
 energy :: HopfieldNet -> Float
 energy (HopfieldNet state weights) = -0.5 * innerProduct weights state
