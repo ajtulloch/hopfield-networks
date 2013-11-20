@@ -1,20 +1,25 @@
 name:                hopfield-networks
 version:             0.1.0.0
-synopsis:            Hopfield Networks for unsupervised learning in Haskell
+description:         Implements discrete asynchronous binary Hopfield networks
+synopsis:            Hopfield Networks in Haskell
 homepage:            https://github.com/ajtulloch/hopfield-networks
 license:             MIT
 license-file:        LICENSE
 author:              Andrew Tulloch
-maintainer:          andrew+cabal@tullo.ch
+maintainer:          Andrew Tulloch <andrew+cabal@tullo.ch>
 category:            Math
 build-type:          Simple
 cabal-version:       >=1.10
+bug-reports:         https://github.com/ajtulloch/hopfield-networks/issues
+source-repository head
+  type:      git
+  location:  https://github.com/ajtulloch/hopfield-networks.git
 
 library
     exposed-modules: MachineLearning.Hopfield, MachineLearning.Util
     default-language:    Haskell2010
     build-depends:
-        base,
+        base >= 4 && < 5,
         vector,
         matrix,
         MonadRandom,
@@ -28,7 +33,7 @@ Test-Suite hopfield_test
     GHC-Options:    -Wall
     build-depends:
         hopfield-networks,
-        base,
+        base >= 4 && < 5,
         QuickCheck,
         vector,
         matrix,
@@ -43,7 +48,7 @@ executable hopfield_demonstration
     GHC-Options:    -Wall
     build-depends:
         hopfield-networks,
-        base,
+        base >= 4 && < 5,
         QuickCheck,
         vector,
         matrix,
