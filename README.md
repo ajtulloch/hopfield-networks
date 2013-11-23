@@ -111,3 +111,7 @@ run a demonstration.
 [GitHub]: https://github.com/johnmyleswhite/HopfieldNets.jl/
 [John Myles White's]: johnmyleswhite.com
 [Information Theory, Inference, and Learning Algorithms]: http://www.inference.phy.cam.ac.uk/itila/
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/ajtulloch/hopfield-networks/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
