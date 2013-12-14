@@ -23,7 +23,8 @@ library
         vector,
         matrix,
         MonadRandom,
-        split
+        split,
+        cmdargs
 
 Test-Suite hopfield_test
     type: exitcode-stdio-1.0
@@ -39,7 +40,8 @@ Test-Suite hopfield_test
         matrix,
         MonadRandom,
         test-framework-quickcheck2,
-        test-framework
+        test-framework,
+        cmdargs
 
 
 executable hopfield_demonstration
@@ -53,4 +55,5 @@ executable hopfield_demonstration
         vector,
         matrix,
         MonadRandom,
-        split
+        split,
+        cmdargs

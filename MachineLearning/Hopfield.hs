@@ -42,8 +42,8 @@ update' (HopfieldNet state weights) neuron = HopfieldNet newState weights
 
 update :: R.MonadRandom m => HopfieldNet -> m HopfieldNet
 update current =  do
-  i <-  R.getRandomR (0, (V.length . _state) current - 1)
-  return $ update' current i
+  neuron <-  R.getRandomR (0, (V.length . _state) current - 1)
+  return $ update' current neuron
 
 -- | Updates the weights of the Hopfield network with the given
 -- training patterns.

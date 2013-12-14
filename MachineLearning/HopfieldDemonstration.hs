@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 module Main where
 
 import qualified Data.Matrix              as M
@@ -7,6 +8,7 @@ import qualified Control.Monad.Random     as R
 import           Data.List.Split          (chunksOf)
 import           MachineLearning.Hopfield
 import           MachineLearning.Util
+import           System.Console.CmdArgs   hiding (args)
 
 -- Height and widght of the patterns we are training on
 width, height :: Int
@@ -14,7 +16,7 @@ width = 6
 height = 7
 
 patterns :: M.Matrix Float
-patterns = (M.rowVector x) M.<-> (M.rowVector o)
+patterns = M.rowVector x M.<-> M.rowVector o
   where
     x = V.fromList
         [1, -1, -1, -1, -1, 1,
@@ -49,8 +51,8 @@ validate trained iterations corruptionLevel pattern =
     do
       corrupted <- R.evalRandIO $ randomCorruption corruptionLevel pattern
       reproduction <- R.evalRandIO $ reproduce corrupted
-      print $ ("Corruption error", difference corrupted pattern)
-      print $ ("Reproduction error", difference pattern reproduction)
+      print ("Corruption error", difference corrupted pattern)
+      print ("Reproduction error", difference pattern reproduction)
 
       print "Original"
       displayPattern pattern
@@ -70,29 +72,36 @@ displayPattern pattern =
     where
       divider = replicate (width + 2) '-'
       patternLines = chunksOf width $ V.toList pattern
-      printLine line = do
-        putStr "|"
-        mapM_ (putStr . repr) line
-        putStrLn "|"
+      printLine line =
+          do
+            putStr "|"
+            mapM_ (putStr . repr) line
+            putStrLn "|"
       repr el = if activity el <= 0 then " " else "X"
 
+-- Command line parsing
+data HopfieldArgs = HopfieldArgs { _numIterations  :: Int
+                                 , _corruptionRate :: Float
+                                 } deriving (Show, Data, Typeable)
 
--- TODO(tulloch) - Pass these on the command line.
-numIterations :: Int
-numIterations = 1000
+runSimulation :: HopfieldArgs -> IO ()
+runSimulation (HopfieldArgs numIterations corruptionRate) =
+    do
+      putStrLn "Training patterns"
+      eachPattern displayPattern
 
-corruptionRate :: Float
-corruptionRate = 0.5
-
-main :: IO ()
-main = do
-  putStrLn "Training patterns"
-  eachPattern displayPattern
-
-  putStrLn "Validation"
-  eachPattern validatePattern
-  return ()
+      putStrLn "Validation"
+      eachPattern validatePattern
+      return ()
   where
     eachPattern f = mapM_ (\x -> f $ M.getRow x patterns) [1..M.nrows patterns]
     validatePattern = validate trained numIterations corruptionRate
     trained = initializeWith patterns
+
+main :: IO ()
+main = cmdArgs hopfieldArgs >>= runSimulation
+  where
+    hopfieldArgs = HopfieldArgs {
+                     _numIterations = def &= explicit &= name "num_iterations"
+                   , _corruptionRate = def &= explicit &= name "corruption_rate"
+                   }
