@@ -2,6 +2,8 @@
 
 module Main where
 
+import           Control.Applicative
+import           Control.Arrow
 import           Control.Monad
 import           Control.Monad.Random     hiding (fromList)
 import           Data.List.Split
@@ -36,20 +38,16 @@ patterns = fromRows [x, o]
          1 , -1, -1, -1, -1, 1,
          1 , 1, 1, 1, 1, 1]
 
-randomCorruption :: (Functor m, MonadRandom m) => Float -> Vector Float -> m (Vector Float)
-randomCorruption proportion pattern =
-    do
-      indices <- getRandomRs (0, dim pattern - 1)
-      values <-  getRandomRs (-1.0 :: Float, 1.0 :: Float)
-      let mutatedValue = map activity values
-      let mutations = take (numMutations pattern) (zip indices mutatedValue)
-      return $ pattern // mutations
-    where
-      numMutations = floor . (proportion *) . fromIntegral . dim
+randomCorruption :: (Applicative m, MonadRandom m) => Float -> Vector Float -> m (Vector Float)
+randomCorruption proportion pattern = (pattern //) <$> mutations
+     where
+       numMutations = (floor . (proportion *) . fromIntegral . dim) pattern
+       mutationStream = zip <$> getRandomRs (0, dim pattern - 1) <*> getRandomRs (-1.0 :: Float, 1.0 :: Float)
+       mutations = take numMutations . map (second activity) <$> mutationStream
 
-
+-- | Gratiuitiously pointfree
 difference :: Vector Float -> Vector Float -> Float
-difference left right = norm2 (sub left right)
+difference = norm2 .* sub where (.*) = (.) . (.)
 
 validate :: HopfieldNet -> Int -> Float -> Vector Float -> IO ()
 validate trained iterations corruptionLevel pattern =
