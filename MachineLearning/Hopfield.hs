@@ -8,7 +8,7 @@ module MachineLearning.Hopfield
      (//),
      energy) where
 
-import           Control.Monad        (foldM)
+import           Control.Monad
 import           Control.Monad.Random hiding (fromList)
 import           Data.Packed.Matrix
 import           Data.Packed.ST

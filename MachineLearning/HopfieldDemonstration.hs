@@ -1,17 +1,15 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE GADTs              #-}
-{-# LANGUAGE StandaloneDeriving #-}
 
 module Main where
 
 import           Control.Monad
 import           Control.Monad.Random     hiding (fromList)
-import           Data.List.Split          (chunksOf)
+import           Data.List.Split
 import           Data.Packed.Matrix
 import           Data.Packed.Vector
 import           MachineLearning.Hopfield
 import           Numeric.Container
-import           System.Console.CmdArgs   hiding (args)
+import           System.Console.CmdArgs
 
 -- Height and widght of the patterns we are training on
 width, height :: Int
