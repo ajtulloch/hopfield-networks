@@ -1,13 +1,16 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE GADTs              #-}
+{-# LANGUAGE StandaloneDeriving #-}
+
 module Main where
 
-import qualified Data.Matrix              as M
-import qualified Data.Vector              as V
-
-import qualified Control.Monad.Random     as R
+import           Control.Monad
+import           Control.Monad.Random     hiding (fromList)
 import           Data.List.Split          (chunksOf)
+import           Data.Packed.Matrix
+import           Data.Packed.Vector
 import           MachineLearning.Hopfield
-import           MachineLearning.Util
+import           Numeric.Container
 import           System.Console.CmdArgs   hiding (args)
 
 -- Height and widght of the patterns we are training on
@@ -15,10 +18,10 @@ width, height :: Int
 width = 6
 height = 7
 
-patterns :: M.Matrix Float
-patterns = M.rowVector x M.<-> M.rowVector o
+patterns :: Matrix Float
+patterns = fromRows [x, o]
   where
-    x = V.fromList
+    x = fromList
         [1, -1, -1, -1, -1, 1,
          -1, 1, -1, -1, 1, -1,
          -1, -1, 1, 1, -1, -1,
@@ -26,7 +29,7 @@ patterns = M.rowVector x M.<-> M.rowVector o
          -1, -1, 1, 1, -1, -1,
          -1, 1, -1, -1, 1, -1,
          1, -1, -1, -1, -1, 1]
-    o = V.fromList
+    o = fromList
         [1 , 1, 1, 1, 1, 1,
          1 , -1, -1, -1, -1, 1,
          1 , -1, -1, -1, -1, 1,
@@ -35,22 +38,26 @@ patterns = M.rowVector x M.<-> M.rowVector o
          1 , -1, -1, -1, -1, 1,
          1 , 1, 1, 1, 1, 1]
 
-randomCorruption :: R.MonadRandom m => Float -> V.Vector Float -> m (V.Vector Float)
+randomCorruption :: MonadRandom m => Float -> Vector Float -> m (Vector Float)
 randomCorruption proportion pattern =
     do
-      indices <- R.getRandomRs (0, V.length pattern - 1)
-      values <-  R.getRandomRs (-1.0 :: Float, 1.0 :: Float)
+      indices <- getRandomRs (0, dim pattern - 1)
+      values <-  getRandomRs (-1.0 :: Float, 1.0 :: Float)
       let mutatedValue = map activity values
       let mutations = take (numMutations pattern) (zip indices mutatedValue)
-      return $ pattern V.// mutations
+      return $ pattern // mutations
     where
-      numMutations = floor . (proportion *) . fromIntegral . V.length
+      numMutations = floor . (proportion *) . fromIntegral . dim
 
-validate :: HopfieldNet -> Int -> Float -> V.Vector Float -> IO ()
+
+difference :: Vector Float -> Vector Float -> Float
+difference left right = norm2 (sub left right)
+
+validate :: HopfieldNet -> Int -> Float -> Vector Float -> IO ()
 validate trained iterations corruptionLevel pattern =
     do
-      corrupted <- R.evalRandIO $ randomCorruption corruptionLevel pattern
-      reproduction <- R.evalRandIO $ reproduce corrupted
+      corrupted <- evalRandIO $ randomCorruption corruptionLevel pattern
+      reproduction <- evalRandIO $ reproduce corrupted
       print ("Corruption error", difference corrupted pattern)
       print ("Reproduction error", difference pattern reproduction)
 
@@ -63,7 +70,7 @@ validate trained iterations corruptionLevel pattern =
     where
       reproduce = associate trained iterations
 
-displayPattern :: V.Vector Float -> IO ()
+displayPattern :: Vector Float -> IO ()
 displayPattern pattern =
     do
       putStrLn divider
@@ -71,12 +78,11 @@ displayPattern pattern =
       putStrLn divider
     where
       divider = replicate (width + 2) '-'
-      patternLines = chunksOf width $ V.toList pattern
-      printLine line =
-          do
-            putStr "|"
-            mapM_ (putStr . repr) line
-            putStrLn "|"
+      patternLines = chunksOf width $ toList pattern
+      printLine line = do
+        putStr "|"
+        mapM_ (putStr . repr) line
+        putStrLn "|"
       repr el = if activity el <= 0 then " " else "X"
 
 -- Command line parsing
@@ -94,7 +100,7 @@ runSimulation (HopfieldArgs numIterations corruptionRate) =
       eachPattern validatePattern
       return ()
   where
-    eachPattern f = mapM_ (\x -> f $ M.getRow x patterns) [1..M.nrows patterns]
+    eachPattern = forM_ (toRows patterns)
     validatePattern = validate trained numIterations corruptionRate
     trained = initializeWith patterns
 

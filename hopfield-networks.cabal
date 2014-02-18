@@ -16,12 +16,11 @@ source-repository head
   location:  https://github.com/ajtulloch/hopfield-networks.git
 
 library
-    exposed-modules: MachineLearning.Hopfield, MachineLearning.Util
+    exposed-modules: MachineLearning.Hopfield
     default-language:    Haskell2010
     build-depends:
         base >= 4 && < 5,
-        vector,
-        matrix,
+        hmatrix,
         MonadRandom,
         split,
         cmdargs
@@ -36,8 +35,7 @@ Test-Suite hopfield_test
         hopfield-networks,
         base >= 4 && < 5,
         QuickCheck,
-        vector,
-        matrix,
+        hmatrix,
         MonadRandom,
         test-framework-quickcheck2,
         test-framework,
@@ -52,8 +50,7 @@ executable hopfield_demonstration
         hopfield-networks,
         base >= 4 && < 5,
         QuickCheck,
-        vector,
-        matrix,
+        hmatrix,
         MonadRandom,
         split,
         cmdargs
