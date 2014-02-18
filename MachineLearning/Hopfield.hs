@@ -8,13 +8,13 @@ module MachineLearning.Hopfield
      (//),
      energy) where
 
-import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.Random hiding (fromList)
 import           Data.Packed.Matrix
 import           Data.Packed.ST
 import           Data.Packed.Vector
 import           Numeric.Container
+
 data HopfieldNet = HopfieldNet { _state   :: Vector Float
                                , _weights :: Matrix Float
                                } deriving (Show)
@@ -31,12 +31,10 @@ initializeWith patterns = train state patterns
       state = initialize (cols patterns)
 
 (//) :: Vector Float -> [(Int, Float)] -> Vector Float
-vec // mutations =
-  runSTVector $
-    do
-      mutableVec <- thawVector vec
-      mapM_ (\(idx, value) -> modifyVector mutableVec idx (const value)) mutations
-      return mutableVec
+vec // mutations = runSTVector $ thawVector vec >>= mutate
+    where
+      mutate mv = forM_ mutations (modify mv) >> return mv
+      modify mv (idx, value) = modifyVector mv idx (const value)
 
 update' :: HopfieldNet -> Int -> HopfieldNet
 update' (HopfieldNet state weights) neuron = HopfieldNet newState weights
