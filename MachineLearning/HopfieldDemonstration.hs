@@ -36,7 +36,7 @@ patterns = fromRows [x, o]
          1 , -1, -1, -1, -1, 1,
          1 , 1, 1, 1, 1, 1]
 
-randomCorruption :: MonadRandom m => Float -> Vector Float -> m (Vector Float)
+randomCorruption :: (Functor m, MonadRandom m) => Float -> Vector Float -> m (Vector Float)
 randomCorruption proportion pattern =
     do
       indices <- getRandomRs (0, dim pattern - 1)
