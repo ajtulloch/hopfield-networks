@@ -45,7 +45,7 @@ randomCorruption proportion pattern = (pattern //) <$> mutations
        mutationStream = zip <$> getRandomRs (0, dim pattern - 1) <*> getRandomRs (-1.0 :: Float, 1.0 :: Float)
        mutations = take numMutations . map (second activity) <$> mutationStream
 
--- | Gratiuitiously pointfree
+-- | Gratuitously pointfree
 difference :: Vector Float -> Vector Float -> Float
 difference = norm2 .* sub where (.*) = (.) . (.)
 
