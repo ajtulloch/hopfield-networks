@@ -1,5 +1,4 @@
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE RecordWildCards #-}
 module MachineLearning.Hopfield
     (HopfieldNet(..),
      initialize,
@@ -10,20 +9,20 @@ module MachineLearning.Hopfield
      (//),
      energy) where
 
-import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.Random hiding (fromList)
 import           Data.Packed.Matrix
 import           Data.Packed.ST
 import           Data.Packed.Vector
+import           Foreign.Storable
 import           Numeric.Container
 
-data HopfieldNet = HopfieldNet { _state   :: Vector Float
-                               , _weights :: Matrix Float
+data HopfieldNet = HopfieldNet { state   :: Vector Float
+                               , weights :: Matrix Float
                                } deriving (Show)
 
 
-activity :: Float -> Float
+activity :: (Floating a, Ord a) => a -> a
 activity activation = if activation <= 0 then -1.0 else 1.0
 
 initialize :: Int -> HopfieldNet
@@ -34,34 +33,39 @@ initializeWith patterns = train state patterns
     where
       state = initialize (cols patterns)
 
-(//) :: Vector Float -> [(Int, Float)] -> Vector Float
+(//)  :: Foreign.Storable.Storable a => Vector a -> [(Int, a)] -> Vector a
 vec // mutations = runSTVector $ thawVector vec >>= mutate
     where
       mutate mv = forM_ mutations (modify mv) >> return mv
       modify mv (idx, value) = modifyVector mv idx (const value)
 
+
 update' :: HopfieldNet -> Int -> HopfieldNet
-update' (HopfieldNet state weights) neuron = HopfieldNet newState weights
+update' HopfieldNet{..} neuron = HopfieldNet newState weights
     where
       newState = state // [(neuron, activity activation)]
       activation = (toColumns weights !! neuron) <.> state
 
-update :: (Functor m, MonadRandom m) => HopfieldNet -> m HopfieldNet
-update current = update' current <$> getRandomR (0, (dim . _state) current - 1)
+update :: MonadRandom m => HopfieldNet -> m HopfieldNet
+update n =  liftM (update' n) $ getRandomR (0, (dim . state) n - 1)
 
 train :: HopfieldNet -> Matrix Float -> HopfieldNet
-train (HopfieldNet state weights) patterns = HopfieldNet state (add weights updates)
+train HopfieldNet{..}  patterns = HopfieldNet state (add weights updates)
     where
       updates = buildMatrix n n weight
       n = dim state
       scalingFactor = 1.0 / fromIntegral (rows patterns)
-      weight (i, j) = (toColumns patterns !! i) <.> (toColumns patterns !! j) * scalingFactor
+      weight (i, j) = (toColumns patterns !! i) <.> (toColumns patterns !! j)
+                      * scalingFactor
 
-settle :: (Functor m, MonadRandom m) => HopfieldNet -> Int -> m HopfieldNet
+settle
+  :: (Enum b, Num b, MonadRandom m) =>
+     HopfieldNet -> b -> m HopfieldNet
 settle net iterations = foldM (\state _ -> update state) net [1..iterations]
 
-associate :: (Functor m, MonadRandom m) => HopfieldNet -> Int -> Vector Float -> m (Vector Float)
-associate net iterations pattern = liftM _state $ settle (net { _state = pattern }) iterations
+associate :: MonadRandom m => HopfieldNet -> Int -> Vector Float -> m (Vector Float)
+associate net iterations pattern =
+    liftM state $ settle (net { state = pattern }) iterations
 
 energy :: HopfieldNet -> Float
-energy (HopfieldNet state weights) = -0.5 * (mXv weights state <.> state)
+energy HopfieldNet{..}  = -0.5 * (mXv weights state <.> state)
