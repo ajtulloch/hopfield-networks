@@ -2,7 +2,6 @@
 
 module Main where
 
-import           Control.Applicative
 import           Control.Arrow
 import           Control.Monad
 import           Control.Monad.Random     hiding (fromList)
@@ -38,24 +37,27 @@ patterns = fromRows [x, o]
          1 , -1, -1, -1, -1, 1,
          1 , 1, 1, 1, 1, 1]
 
-randomCorruption :: (Applicative m, MonadRandom m) => Float -> Vector Float -> m (Vector Float)
-randomCorruption proportion pattern = (pattern //) <$> mutations
+randomCorruption :: MonadRandom m => Float -> Vector Float -> m (Vector Float)
+randomCorruption proportion pattern = liftM (pattern //) mutations
      where
        numMutations = (floor . (proportion *) . fromIntegral . dim) pattern
-       mutationStream = zip <$> getRandomRs (0, dim pattern - 1) <*> getRandomRs (-1.0 :: Float, 1.0 :: Float)
-       mutations = take numMutations . map (second activity) <$> mutationStream
+       mutationStream = liftM2 zip
+                        (getRandomRs (0, dim pattern - 1))
+                        (getRandomRs (-1.0 :: Float, 1.0 :: Float))
+       mutations =
+           liftM (take numMutations . map (second activity)) mutationStream
 
--- | Gratuitously pointfree
-difference :: Vector Float -> Vector Float -> Float
-difference = norm2 .* sub where (.*) = (.) . (.)
+-- | Squared distance in L^2
+squaredDistance :: Vector Float -> Vector Float -> Float
+squaredDistance = norm2 .* sub where (.*) = (.) . (.) -- Gratuitously pointfree
 
 validate :: HopfieldNet -> Int -> Float -> Vector Float -> IO ()
 validate trained iterations corruptionLevel pattern =
     do
       corrupted <- evalRandIO $ randomCorruption corruptionLevel pattern
       reproduction <- evalRandIO $ reproduce corrupted
-      print ("Corruption error", difference corrupted pattern)
-      print ("Reproduction error", difference pattern reproduction)
+      print ("Corruption error", squaredDistance corrupted pattern)
+      print ("Reproduction error", squaredDistance pattern reproduction)
 
       print "Original"
       displayPattern pattern
